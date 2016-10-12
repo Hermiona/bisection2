@@ -10,7 +10,7 @@ import java.beans.*;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.concurrent.TimeUnit;
-
+import java.util.List;
 public class ProgressBarDemo2 extends JPanel   implements ActionListener, PropertyChangeListener {
 
     private JProgressBar progressBar;
@@ -56,8 +56,14 @@ public class ProgressBarDemo2 extends JPanel   implements ActionListener, Proper
     final BigDecimal TWO = new BigDecimal("2");
     boolean loop = false;
 
-    class Task extends SwingWorker<Void, Void> {
-
+    class Task extends SwingWorker<Void, IntermediateResult> {
+        
+        private TextArea display;
+        
+        Task(TextArea display){
+            this.display=display;
+        }
+        
         /*
          * Main task. Executed in background thread.
          */
@@ -105,7 +111,9 @@ public class ProgressBarDemo2 extends JPanel   implements ActionListener, Proper
 //                  ========================================================
                     progress=(int) (k+1)*100/maxIter;
                     setProgress(progress);
-                    display.append((k + 1) + ". x= " + x + ";  f(x)= " + funcVal + ";  abs(b-a)= " + (b.subtract(a)).abs().toString() + "\n");
+//                    publish(new IntermediateResult(k+1, x, funcVal, (b.subtract(a)).abs()));
+                display.append((k + 1) + ". x= " + x + ";  f(x)= " + funcVal + ";  abs(b-a)= " + (b.subtract(a)).abs().toString() + "\n");
+
 //                  =========================================================
                     if (f_a.multiply(funcVal).signum() == -1) { //f(a) and f(x) are on the opposite sides of Y-axis
                         b = x;
@@ -140,7 +148,17 @@ public class ProgressBarDemo2 extends JPanel   implements ActionListener, Proper
 
             return null;
         }
-
+        
+        
+        @Override
+        protected  void process(List<IntermediateResult> resultList){
+             for (IntermediateResult result : resultList){
+//                display.append((k + 1) + ". x= " + x + ";  f(x)= " + funcVal + ";  abs(b-a)= " + (b.subtract(a)).abs().toString() + "\n");
+                display.append(result.iter + ". x= " + result.x + ";  f(x)= " + result.funcVal + ";  abs(b-a)= " + result.b_a.toString() + "\n");
+    
+            }
+        }
+        
         /*
          * Executed in event dispatch thread
          */
@@ -149,7 +167,6 @@ public class ProgressBarDemo2 extends JPanel   implements ActionListener, Proper
             Toolkit.getDefaultToolkit().beep();
             btnContin.setEnabled(true);
             btnGo.setEnabled(true);
-//            taskOutput.append("Done!\n");
         }
     }//end class
 
@@ -258,7 +275,7 @@ public class ProgressBarDemo2 extends JPanel   implements ActionListener, Proper
         if ("go".equals(evt.getActionCommand())) {
 
 //            progressBar.setIndeterminate(true);
-            task = new Task();
+            task = new Task(display);
             task.addPropertyChangeListener(this);
             task.execute();
             
@@ -270,7 +287,7 @@ public class ProgressBarDemo2 extends JPanel   implements ActionListener, Proper
 //            progressBar.setIndeterminate(true);
             //Instances of javax.swing.SwingWorker are not reusuable, so
             //we create new instances as needed.
-            task = new Task();
+            task = new Task(display);
             task.addPropertyChangeListener(this);
             task.execute();
         }else if ("reset".equals(evt.getActionCommand())) {

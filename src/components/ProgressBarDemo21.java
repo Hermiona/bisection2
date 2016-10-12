@@ -24,7 +24,7 @@ public class ProgressBarDemo21 extends JPanel implements ActionListener, Propert
     Button btnStop;
     Button btnContin;
     Button btnReset;
-    
+
     Panel commonPanel;
     Panel btnPanel;
     Panel lblPanel;
@@ -46,7 +46,13 @@ public class ProgressBarDemo21 extends JPanel implements ActionListener, Propert
 
     boolean loop = false;
 
-    class Task extends SwingWorker<Void, Void> {
+    class Task extends SwingWorker<Void, IntermediateResult> {
+
+        private TextArea display;
+
+        Task(TextArea display) {
+            this.display = display;
+        }
 
         /*
          * Main task. Executed in background thread.
@@ -54,14 +60,13 @@ public class ProgressBarDemo21 extends JPanel implements ActionListener, Propert
         @Override
         public Void doInBackground() {
 
-            int k = 0, substringPos , maxIter ;
+            int k = 0, substringPos, maxIter;
             String functionStr, derive;
 
             loop = true;
             btnGo.setEnabled(false);
             btnContin.setEnabled(false);
 
-            
             try {
                 display.append("\n");
                 functionStr = txtFunction.getText().trim();
@@ -69,7 +74,7 @@ public class ProgressBarDemo21 extends JPanel implements ActionListener, Propert
                 if (functionStr.equals("")) {
                     throw new Exception("No equation given");
                 }
-                int progress ;
+                int progress;
                 //Initialize progress property.
                 setProgress(0);
                 xVal = new BigDecimal(txtStartValue.getText().trim());
@@ -92,11 +97,12 @@ public class ProgressBarDemo21 extends JPanel implements ActionListener, Propert
                     xPrev = xVal;
                     xVal = xVal.subtract(funcVal.divide(deriveExpression.with("x", xVal).eval(), MathContext.DECIMAL128));  //xVal - e.eval(s1, "x=" + xVal) / e.eval(derive, "x=" + xVal);
                     funcVal = expression.with("x", xVal).eval();
-                    
-                     //interacts with GUI
+
+                    //interacts with GUI
 //                  ========================================================
-                    progress = (int) (k + 1) * 100 / maxIter; 
+                    progress = (int) (k + 1) * 100 / maxIter;
                     setProgress(progress);
+//                    publish(new IntermediateResult(k + 1, xVal, funcVal, (xPrev.subtract(xVal)).abs()));
                     display.append((k + 1) + ". x= " + xVal + ";  f(x)= " + funcVal + ";  abs(b-a)= " + (xPrev.subtract(xVal)).abs().toString() + "\n");
 //                  ========================================================
 
@@ -114,7 +120,6 @@ public class ProgressBarDemo21 extends JPanel implements ActionListener, Propert
                     display.append("Elapsed Time= " + estimatedTime + " ms.\n");
                 }
 
-
             } catch (NumberFormatException _ex) {
                 display.append("Error: please make sure  that a start value, the number of iterations \nand tolerance were given and are numbers \n\n");
             } catch (Exception exception) {
@@ -124,6 +129,15 @@ public class ProgressBarDemo21 extends JPanel implements ActionListener, Propert
             loop = false;
 
             return null;
+        }
+
+        @Override
+        protected void process(java.util.List<IntermediateResult> resultList) {
+            for (IntermediateResult result : resultList) {
+//                    display.append((k + 1) + ". x= " + xVal + ";  f(x)= " + funcVal + ";  abs(b-a)= " + (xPrev.subtract(xVal)).abs().toString() + "\n");
+                    display.append(result.iter + ". x= " + result.x + ";  f(x)= " + result.funcVal + ";  abs(b-a)= " + result.b_a.toString() + "\n");
+
+            }
         }
 
         /*
@@ -138,33 +152,30 @@ public class ProgressBarDemo21 extends JPanel implements ActionListener, Propert
         }
     } //end class
 
-    
-    
     public ProgressBarDemo21() {
-        
+
         super(new BorderLayout());
         txtFunction = new TextField();
         txtStartValue = new TextField();
         txtIter = new TextField("10");
         txtTol = new TextField();
         display = new TextArea(5, 30);
-        
+
         btnGo = new Button("Start");
         btnStop = new Button("Stop");
         btnContin = new Button("Continue");
-        btnReset=new Button("Clear");
-        
+        btnReset = new Button("Clear");
+
         btnGo.setActionCommand("go");
         btnStop.setActionCommand("stop");
         btnContin.setActionCommand("continue");
         btnReset.setActionCommand("reset");
-        
-        
+
         btnGo.addActionListener(this);
         btnStop.addActionListener(this);
         btnContin.addActionListener(this);
         btnReset.addActionListener(this);
-        
+
         commonPanel = new Panel();
         btnPanel = new Panel();
         p4 = new Panel();
@@ -212,24 +223,19 @@ public class ProgressBarDemo21 extends JPanel implements ActionListener, Propert
         commonPanel.add(lblPanel);
         commonPanel.add(txtPanel);
         commonPanel.add(btnPanel);
-        
-        
-        
-        
+
         progressBar = new JProgressBar(0, 100);
         progressBar.setValue(0);
         progressBar.setStringPainted(true);
 
-        add( commonPanel, BorderLayout.PAGE_START);
-        add( new JScrollPane(display), BorderLayout.CENTER);
-        add( progressBar, BorderLayout.PAGE_END);
+        add(commonPanel, BorderLayout.PAGE_START);
+        add(new JScrollPane(display), BorderLayout.CENTER);
+        add(progressBar, BorderLayout.PAGE_END);
     }
-    
-    
-    
+
     /**
      * Invoked when the user presses the start button.
-     * 
+     *
      */
     public void actionPerformed(ActionEvent evt) {
 
@@ -238,7 +244,7 @@ public class ProgressBarDemo21 extends JPanel implements ActionListener, Propert
 //            progressBar.setIndeterminate(true);
             //Instances of javax.swing.SwingWorker are not reusuable, so
             //we create new instances as needed.
-            task = new Task();
+            task = new Task(display);
             task.addPropertyChangeListener(this);
             task.execute();
 
@@ -246,14 +252,14 @@ public class ProgressBarDemo21 extends JPanel implements ActionListener, Propert
             loop = false;
         } else if ("continue".equals(evt.getActionCommand())) {
             txtStartValue.setText(String.valueOf(xVal));
-            task = new Task();
+            task = new Task(display);
             task.addPropertyChangeListener(this);
             task.execute();
         } else if ("reset".equals(evt.getActionCommand())) {
-            display.setText(""+'\u0000'); //ACSII code of 0 is '\u0000'
-            txtFunction.setText(""+'\u0000');
-            txtTol.setText(""+'\u0000');
-            txtStartValue.setText(""+'\u0000');
+            display.setText("" + '\u0000'); //ACSII code of 0 is '\u0000'
+            txtFunction.setText("" + '\u0000');
+            txtTol.setText("" + '\u0000');
+            txtStartValue.setText("" + '\u0000');
         }
 
     }
@@ -277,12 +283,12 @@ public class ProgressBarDemo21 extends JPanel implements ActionListener, Propert
         //Create and set up the window.
         JFrame frame = new JFrame("Newton Method");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        
+
         //Create and set up the content pane.
         JComponent newContentPane = new ProgressBarDemo21();
         newContentPane.setOpaque(true); //content panes must be opaque
         frame.setContentPane(newContentPane);
-        
+
         frame.pack();
         frame.setVisible(true);
     }
