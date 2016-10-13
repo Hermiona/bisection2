@@ -1,5 +1,5 @@
 package components;
-
+import  org.nevec.rjm.BigDecimalMath;
 /*
  * Copyright 2012 Udo Klimaschewski
  * 
@@ -885,17 +885,22 @@ public class Expression {
 			public BigDecimal eval(List<BigDecimal> parameters) {
 //				double d = Math.sin(Math.toRadians(parameters.get(0)
 //						.doubleValue()));
-                                double d = Math.sin((parameters.get(0)
-						.doubleValue()));
-				return new BigDecimal(d, mc);
+//                                double d = Math.sin((parameters.get(0)
+//						.doubleValue()));
+//				return new BigDecimal(d, mc);
+                                BigDecimal d2=BigDecimalMath.sin(parameters.get(0));
+                                return d2;
 			}
 		});
 		addFunction(new Function("COS", 1) {
 			@Override
 			public BigDecimal eval(List<BigDecimal> parameters) {
-				double d = Math.cos((parameters.get(0)
-						.doubleValue()));
-				return new BigDecimal(d, mc);
+//				double d = Math.cos((parameters.get(0)
+//						.doubleValue()));
+//				return new BigDecimal(d, mc);
+                                
+                                BigDecimal d2=BigDecimalMath.cos(parameters.get(0));
+                                return d2;
 			}
 		});
 		addFunction(new Function("TAN", 1) {

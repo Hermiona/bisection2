@@ -9,6 +9,7 @@ import javax.swing.*;
 import java.beans.*;
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.math.RoundingMode;
 import java.util.concurrent.TimeUnit;
 import java.util.List;
 public class ProgressBarDemo2 extends JPanel   implements ActionListener, PropertyChangeListener {
@@ -17,6 +18,7 @@ public class ProgressBarDemo2 extends JPanel   implements ActionListener, Proper
     private Task task;
 
     TextField txtFunction;
+//    JComboBox<Object>
     TextField txtIter;
     TextField txtTol;
     TextField txtA;
@@ -112,7 +114,7 @@ public class ProgressBarDemo2 extends JPanel   implements ActionListener, Proper
                     progress=(int) (k+1)*100/maxIter;
                     setProgress(progress);
 //                    publish(new IntermediateResult(k+1, x, funcVal, (b.subtract(a)).abs()));
-                display.append((k + 1) + ". x= " + x + ";  f(x)= " + funcVal + ";  abs(b-a)= " + (b.subtract(a)).abs().toString() + "\n");
+                display.append((k + 1) + ". x= " + x + ";  f(x)= " + funcVal + ";  abs(b-a)= " + (b.subtract(a)).abs().toEngineeringString()+ "\n"); //setScale(4, RoundingMode.HALF_UP) toString
 
 //                  =========================================================
                     if (f_a.multiply(funcVal).signum() == -1) { //f(a) and f(x) are on the opposite sides of Y-axis
@@ -137,8 +139,8 @@ public class ProgressBarDemo2 extends JPanel   implements ActionListener, Proper
                     display.append("Elapsed Time= " + estimatedTime + " ms.\n");
                 }
 
-            } catch (NumberFormatException _ex) {
-                display.append("Error: please make sure  that a start value, the number of iterations \nand tolerance were given and are numbers \n\n");
+            }catch (NumberFormatException _ex) {
+                display.append("Error: please make sure  that border values, the number of iterations \nand tolerance were given and are numbers \n\n");
             } catch (Exception exception) {
                 display.append("Error: " + exception.getMessage() + "\n\n");
             }
@@ -177,8 +179,8 @@ public class ProgressBarDemo2 extends JPanel   implements ActionListener, Proper
         txtA = new TextField();
         txtB = new TextField();
 
-        txtIter = new TextField("10");
-        txtTol = new TextField();
+        txtIter = new TextField("100");
+        txtTol = new TextField("1e-28");
         display = new TextArea(5, 30);
         btnGo = new Button("Start");
         btnStop = new Button("Stop");
@@ -262,7 +264,7 @@ public class ProgressBarDemo2 extends JPanel   implements ActionListener, Proper
         progressBar.setStringPainted(true);
         
         add( commonPanel, BorderLayout.PAGE_START);
-        add( new JScrollPane(display), BorderLayout.CENTER);
+        add( display, BorderLayout.CENTER);
         add( progressBar, BorderLayout.PAGE_END);
     }
 
@@ -291,10 +293,10 @@ public class ProgressBarDemo2 extends JPanel   implements ActionListener, Proper
             task.addPropertyChangeListener(this);
             task.execute();
         }else if ("reset".equals(evt.getActionCommand())) {
-            txtA.setText(""+'\u0000');
-            txtB.setText(""+'\u0000');
-            txtFunction.setText(""+'\u0000');
-            txtTol.setText(""+'\u0000');
+//            txtA.setText(""+'\u0000');
+//            txtB.setText(""+'\u0000');
+//            txtFunction.setText(""+'\u0000');
+//            txtTol.setText(""+'\u0000');
             display.setText(""+'\u0000');
                     
         }
@@ -325,8 +327,10 @@ public class ProgressBarDemo2 extends JPanel   implements ActionListener, Proper
         newContentPane.setOpaque(true); //content panes must be opaque
         frame.setContentPane(newContentPane);
         
-        
-        frame.pack();
+        frame.setSize(1200, 400);
+        frame.setLocationRelativeTo(null);
+//        frame.pack();
+//        frame.set
         frame.setVisible(true);
     }
 

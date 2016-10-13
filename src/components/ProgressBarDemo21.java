@@ -8,6 +8,7 @@ import java.beans.*;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.concurrent.TimeUnit;
+import  org.nevec.rjm.BigDecimalMath;
 
 public class ProgressBarDemo21 extends JPanel implements ActionListener, PropertyChangeListener {
 
@@ -18,7 +19,8 @@ public class ProgressBarDemo21 extends JPanel implements ActionListener, Propert
     TextField txtStartValue;
     TextField txtIter;
     TextField txtTol;
-
+    TextField txtDerive;
+    
     TextArea display;
     Button btnGo;
     Button btnStop;
@@ -32,6 +34,7 @@ public class ProgressBarDemo21 extends JPanel implements ActionListener, Propert
     Panel p4;
     Panel p5;
     Label lblEquation;
+    Label lblDerive;
     Label lblStartVal;
     Label lblIterations;
     Label lblTolerance;
@@ -87,23 +90,33 @@ public class ProgressBarDemo21 extends JPanel implements ActionListener, Propert
                 long startTime = System.nanoTime();
 
                 derive = d.diff(functionStr, "x")[0];
+                txtDerive.setText(derive);
+                
                 Expression expression = new Expression(functionStr);
-                Expression deriveExpression = new Expression(derive);
+                Expression deriveExpression = new Expression("2*x-4*cos(x)"); //derive
 
                 tol = new BigDecimal(txtTol.getText().trim());
-                funcVal = expression.with("x", xVal).eval();
-
+//                funcVal = expression.with("x", xVal).eval();
+                funcVal=xVal.pow(2).subtract(BigDecimalMath.sin(xVal).multiply(new BigDecimal("4")));
+//                funcVal=funcVal.multiply(new BigDecimal("1000000"));
+                BigDecimal temp, deriveVal;
                 for (; k < maxIter && loop; k++) {
                     xPrev = xVal;
-                    xVal = xVal.subtract(funcVal.divide(deriveExpression.with("x", xVal).eval(), MathContext.DECIMAL128));  //xVal - e.eval(s1, "x=" + xVal) / e.eval(derive, "x=" + xVal);
-                    funcVal = expression.with("x", xVal).eval();
-
+//                    deriveVal=deriveExpression.with("x", xVal).eval().multiply(new BigDecimal("1000000")).divide( new BigDecimal("1000000"),MathContext.UNLIMITED );
+                    deriveVal=xVal.multiply(new BigDecimal("2")).subtract(BigDecimalMath.cos(xVal).multiply(new BigDecimal("4")));
+//                    deriveVal=deriveVal.multiply(new BigDecimal("1000000"));
+                    temp=funcVal.divide(deriveVal, MathContext.DECIMAL128);
+                    xVal = xVal.subtract(temp);  //xVal - e.eval(s1, "x=" + xVal) / e.eval(derive, "x=" + xVal);
+//                    funcVal = expression.with("x", xVal).eval();
+//                    funcVal=xVal.pow(2).subtract(new BigDecimal(Math.sin(xVal.doubleValue())*4));
+//                     funcVal=funcVal.multiply(new BigDecimal("1000000"));
+                    funcVal=xVal.pow(2).subtract(BigDecimalMath.sin(xVal).multiply(new BigDecimal("4")));
                     //interacts with GUI
 //                  ========================================================
                     progress = (int) (k + 1) * 100 / maxIter;
                     setProgress(progress);
 //                    publish(new IntermediateResult(k + 1, xVal, funcVal, (xPrev.subtract(xVal)).abs()));
-                    display.append((k + 1) + ". x= " + xVal + ";  f(x)= " + funcVal + ";  abs(b-a)= " + (xPrev.subtract(xVal)).abs().toString() + "\n");
+                    display.append((k + 1) + ". x= " + xVal + ";  f(x)= " + funcVal +" f'(x) = " + deriveVal +   ";  abs(b-a)= " + (xPrev.subtract(xVal)).abs().toEngineeringString() + "\n"); //toEngineeringString toString
 //                  ========================================================
 
                     if ((xPrev.subtract(xVal)).abs().compareTo(tol) == -1) {
@@ -157,8 +170,10 @@ public class ProgressBarDemo21 extends JPanel implements ActionListener, Propert
         super(new BorderLayout());
         txtFunction = new TextField();
         txtStartValue = new TextField();
-        txtIter = new TextField("10");
-        txtTol = new TextField();
+        txtIter = new TextField("100");
+        txtTol = new TextField("1e-28");
+        txtDerive=new TextField();
+        txtDerive.setEditable(false);
         display = new TextArea(5, 30);
 
         btnGo = new Button("Start");
@@ -196,11 +211,12 @@ public class ProgressBarDemo21 extends JPanel implements ActionListener, Propert
         display.setBackground(Color.white);
 
         lblEquation = new Label("Equation, f(x) = g(x)");
+        lblDerive=new Label("Derivation");
         lblStartVal = new Label("Start value");
         lblIterations = new Label("Number of iterations");
         lblTolerance = new Label("Tolerance");
 
-        commonPanel.setLayout(new GridLayout(5, 1));
+        commonPanel.setLayout(new GridLayout(7, 1));
         btnPanel.setLayout(new GridLayout(1, 5)); //for btns
         lblPanel.setLayout(new GridLayout(1, 3)); //labels for startValue value and iterations
         txtPanel.setLayout(new GridLayout(1, 4)); //txtfields for startValue value , iterations, tolerance
@@ -220,6 +236,8 @@ public class ProgressBarDemo21 extends JPanel implements ActionListener, Propert
         btnPanel.add(p5);
         commonPanel.add(lblEquation);
         commonPanel.add(txtFunction);
+        commonPanel.add(lblDerive);
+        commonPanel.add(txtDerive);
         commonPanel.add(lblPanel);
         commonPanel.add(txtPanel);
         commonPanel.add(btnPanel);
@@ -257,9 +275,9 @@ public class ProgressBarDemo21 extends JPanel implements ActionListener, Propert
             task.execute();
         } else if ("reset".equals(evt.getActionCommand())) {
             display.setText("" + '\u0000'); //ACSII code of 0 is '\u0000'
-            txtFunction.setText("" + '\u0000');
-            txtTol.setText("" + '\u0000');
-            txtStartValue.setText("" + '\u0000');
+//            txtFunction.setText("" + '\u0000');
+//            txtTol.setText("" + '\u0000');
+//            txtStartValue.setText("" + '\u0000');
         }
 
     }
@@ -288,8 +306,10 @@ public class ProgressBarDemo21 extends JPanel implements ActionListener, Propert
         JComponent newContentPane = new ProgressBarDemo21();
         newContentPane.setOpaque(true); //content panes must be opaque
         frame.setContentPane(newContentPane);
-
-        frame.pack();
+        
+        frame.setSize(new Dimension(1200, 400));
+        frame.setLocationRelativeTo(null);
+//        frame.pack();
         frame.setVisible(true);
     }
 
