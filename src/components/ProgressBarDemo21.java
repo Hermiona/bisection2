@@ -1,6 +1,6 @@
 package components;
 
-import info.lundin.math.Derive;
+import info.lundin.math.*;
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
@@ -8,13 +8,12 @@ import java.beans.*;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.concurrent.TimeUnit;
-import  org.nevec.rjm.BigDecimalMath;
 
 public class ProgressBarDemo21 extends JPanel implements ActionListener, PropertyChangeListener {
 
     private JProgressBar progressBar;
     private Task task;
-
+    
     TextField txtFunction;
     TextField txtStartValue;
     TextField txtIter;
@@ -46,7 +45,8 @@ public class ProgressBarDemo21 extends JPanel implements ActionListener, Propert
     BigDecimal tol;
     BigDecimal a;
     BigDecimal b;
-
+    
+    Eval e=new Eval();
     boolean loop = false;
 
     class Task extends SwingWorker<Void, IntermediateResult> {
@@ -96,21 +96,14 @@ public class ProgressBarDemo21 extends JPanel implements ActionListener, Propert
                 Expression deriveExpression = new Expression("2*x-4*cos(x)"); //derive
 
                 tol = new BigDecimal(txtTol.getText().trim());
-//                funcVal = expression.with("x", xVal).eval();
-                funcVal=xVal.pow(2).subtract(BigDecimalMath.sin(xVal).multiply(new BigDecimal("4")));
-//                funcVal=funcVal.multiply(new BigDecimal("1000000"));
+                funcVal = expression.with("x", xVal).eval();
                 BigDecimal temp, deriveVal;
                 for (; k < maxIter && loop; k++) {
                     xPrev = xVal;
-//                    deriveVal=deriveExpression.with("x", xVal).eval().multiply(new BigDecimal("1000000")).divide( new BigDecimal("1000000"),MathContext.UNLIMITED );
-                    deriveVal=xVal.multiply(new BigDecimal("2")).subtract(BigDecimalMath.cos(xVal).multiply(new BigDecimal("4")));
-//                    deriveVal=deriveVal.multiply(new BigDecimal("1000000"));
+                    deriveVal=deriveExpression.with("x", xVal).eval();
                     temp=funcVal.divide(deriveVal, MathContext.DECIMAL128);
                     xVal = xVal.subtract(temp);  //xVal - e.eval(s1, "x=" + xVal) / e.eval(derive, "x=" + xVal);
-//                    funcVal = expression.with("x", xVal).eval();
-//                    funcVal=xVal.pow(2).subtract(new BigDecimal(Math.sin(xVal.doubleValue())*4));
-//                     funcVal=funcVal.multiply(new BigDecimal("1000000"));
-                    funcVal=xVal.pow(2).subtract(BigDecimalMath.sin(xVal).multiply(new BigDecimal("4")));
+                    funcVal = expression.with("x", xVal).eval();
                     //interacts with GUI
 //                  ========================================================
                     progress = (int) (k + 1) * 100 / maxIter;

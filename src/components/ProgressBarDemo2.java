@@ -1,15 +1,12 @@
 
 package components;
 
-import info.lundin.math.Derive;
-import info.lundin.math.Eval;
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 import java.beans.*;
 import java.math.BigDecimal;
 import java.math.MathContext;
-import java.math.RoundingMode;
 import java.util.concurrent.TimeUnit;
 import java.util.List;
 public class ProgressBarDemo2 extends JPanel   implements ActionListener, PropertyChangeListener {
