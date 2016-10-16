@@ -1,6 +1,7 @@
 package components;
 
 
+import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -12,16 +13,29 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 import java.util.TreeMap;
+import org.apfloat.Apcomplex;
 
 import org.apfloat.Apfloat;
-import org.apfloat.ApfloatMath;
-
+//import org.apfloat.ApfloatMath;
+import org.apfloat.FixedPrecisionApfloatHelper;
+import org.apfloat.FixedPrecisionApcomplexHelper;
 public class Expression {
 
 //        public static void main(String[] args) {
-//            System.out.println(PI);
-//            Expression expr=new Expression("x^2");
-//            System.out.println(expr.with("x", "3").eval());
+//            Expression expr=new Expression("x^2", 30);
+//            System.out.println(expr.PI);
+//            System.out.println(expr.with("x", "-3").eval());
+//            
+//            BigDecimal b=new BigDecimal(expr.with("x", "-3").eval().toString(true));
+//            System.out.println(b);
+////            Apfloat ap=new Apfloat("30");
+////            String s=ap.toString(true);
+////            System.out.println(s);
+////            System.out.println(s.indexOf('.'));
+////            System.out.println(s.length()-1-s.indexOf('.'));
+////            System.out.println(expr.complexHelper.real(new Apcomplex("( 5 , 6 )")));
+//            //System.out.println(ap.toString(true));
+//            //System.out.println(expr.helper.modf(ap)[0]);
 //        }
         
 	/**
@@ -29,19 +43,22 @@ public class Expression {
 	 */
 //	public static final Apfloat PI = new Apfloat(
 //			"3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679");
-	public static final Apfloat PI=ApfloatMath.pi(100);
+	
+        public  FixedPrecisionApfloatHelper helper;
+        public FixedPrecisionApcomplexHelper complexHelper;
+        public    Apfloat PI;
          /**
          * Definition of e: "Euler's number" as a constant, can be used in expressions as variable.
          */
-         public static final Apfloat e = new Apfloat(
-                        "2.71828182845904523536028747135266249775724709369995957496696762772407663");
-//        public static final Apfloat e=    ApfloatMath.exp(Apfloat.ONE);
+//         public static final Apfloat e = new Apfloat(
+//                        "2.71828182845904523536028747135266249775724709369995957496696762772407663");
+        public    Apfloat e;
 
 	/**
 	 * The {@link MathContext} to use for calculations.
 	 */
-	private MathContext mc = null;
-
+//	private MathContext mc = null;
+        private RoundingMode rMode;
 	/**
 	 * The original infix expression.
 	 */
@@ -370,8 +387,12 @@ public class Expression {
 	 *            The expression. E.g. <code>"2.4*sin(3)/(2-4)"</code> or
 	 *            <code>"sin(y)>0 & max(z, 3)>3"</code>
 	 */
-	public Expression(String expression) {
+	public Expression(String expression, long precision) {
 		this(expression, MathContext.DECIMAL128);
+                helper=new FixedPrecisionApfloatHelper(precision);
+                complexHelper=new FixedPrecisionApcomplexHelper(precision);
+                PI=helper.pi();
+                e = helper.exp(Apfloat.ONE);
 	}
 
 	/**
@@ -385,41 +406,41 @@ public class Expression {
 	 *            The {@link MathContext} to use by default.
 	 */
 	public Expression(String expression, MathContext defaultMathContext) {
-		this.mc = defaultMathContext;
+//		this.mc = defaultMathContext;
 		this.expression = expression;
 		addOperator(new Operator("+", 20, true) {
 			@Override
 			public Apfloat eval(Apfloat v1, Apfloat v2) {
 //				return v1.add(v2, mc);
-                                return  v1.add(v2);
+                                return  helper.add(v1,v2);
 			}
 		});
 		addOperator(new Operator("-", 20, true) {
 			@Override
 			public Apfloat eval(Apfloat v1, Apfloat v2) {
 //				return v1.subtract(v2, mc);
-                                return v1.subtract(v2);
+                                return helper.subtract(v1,v2);
                         }
 		});
 		addOperator(new Operator("*", 30, true) {
 			@Override
 			public Apfloat eval(Apfloat v1, Apfloat v2) {
 //				return v1.multiply(v2, mc);
-                                return v1.multiply(v2);
+                                return helper.multiply(v1,v2);
                         }
 		});
 		addOperator(new Operator("/", 30, true) {
 			@Override
 			public Apfloat eval(Apfloat v1, Apfloat v2) {
 //				return v1.divide(v2, mc);
-                                return v1.divide(v2);
+                                return helper.divide(v1, v2);
                         }
 		});
 		addOperator(new Operator("%", 30, true) {
 			@Override
 			public Apfloat eval(Apfloat v1, Apfloat v2) {
 //				return v1.remainder(v2, mc);
-                                return v1.mod(v2);
+                                return helper.fmod(v1, v2);
                         }
 		});
 		addOperator(new Operator("^", 40, false) {
@@ -444,7 +465,12 @@ public class Expression {
 //							RoundingMode.HALF_UP);
 //				}
 //				return result;
-                                return ApfloatMath.pow(v1, v2);
+//                                return helper.pow(v1, v2);  
+                                int sign=  v1.signum();
+                                if(sign<0)
+                                    return new Apfloat(complexHelper.pow(v1, v2).toString(true));
+                                else
+                                    return helper.pow(v1, v2);
 			}
 		});
 		addOperator(new Operator("&&", 4, false) {
@@ -553,7 +579,7 @@ public class Expression {
 //						.doubleValue()));
 //				return new Apfloat(d, mc);
                                 
-                                Apfloat d2=ApfloatMath.sin(ApfloatMath.toDegrees(parameters.get(0)));
+                                Apfloat d2=helper.sin(helper.toDegrees(parameters.get(0)));
                                 return d2;
 			}
 		});
@@ -564,7 +590,7 @@ public class Expression {
 //						.doubleValue()));
 //				return new Apfloat(d, mc);
                                 
-                                Apfloat d2=ApfloatMath.cos(ApfloatMath.toDegrees(parameters.get(0)));
+                                Apfloat d2=helper.cos(helper.toDegrees(parameters.get(0)));
                                 return d2;
 			}
 		});
@@ -575,7 +601,7 @@ public class Expression {
 //						.doubleValue()));
 //				return new Apfloat(d, mc);
 
-                                Apfloat d2=ApfloatMath.tan(ApfloatMath.toDegrees(parameters.get(0)));
+                                Apfloat d2=helper.tan(helper.toDegrees(parameters.get(0)));
                                 return d2;
                         }
 		});
@@ -586,7 +612,7 @@ public class Expression {
 //						.doubleValue()));
 //				return new Apfloat(d, mc);
 
-                                Apfloat d2=ApfloatMath.asin(ApfloatMath.toDegrees(parameters.get(0)));
+                                Apfloat d2=helper.asin(helper.toDegrees(parameters.get(0)));
                                 return d2;
                         }
 		});
@@ -597,7 +623,7 @@ public class Expression {
 //						.doubleValue()));
 //				return new Apfloat(d, mc);
 			
-                                Apfloat d2=ApfloatMath.acos(ApfloatMath.toDegrees(parameters.get(0)));
+                                Apfloat d2=helper.acos(helper.toDegrees(parameters.get(0)));
                                 return d2;
                         }
 		});
@@ -608,7 +634,7 @@ public class Expression {
 //						.doubleValue()));
 //				return new Apfloat(d, mc);
 			
-                               Apfloat d2=ApfloatMath.atan(ApfloatMath.toDegrees(parameters.get(0)));
+                               Apfloat d2=helper.atan(helper.toDegrees(parameters.get(0)));
                                 return d2; 
                         }
 		});
@@ -618,7 +644,7 @@ public class Expression {
 //				double d = Math.sinh(parameters.get(0).doubleValue());
 //				return new Apfloat(d, mc);
 			
-                                Apfloat d2=ApfloatMath.sinh(ApfloatMath.toDegrees(parameters.get(0)));
+                                Apfloat d2=helper.sinh(helper.toDegrees(parameters.get(0)));
                                 return d2; 
                         }
 		});
@@ -628,7 +654,7 @@ public class Expression {
 //				double d = Math.cosh(parameters.get(0).doubleValue());
 //				return new Apfloat(d, mc);
 			
-                                Apfloat d2=ApfloatMath.cosh(ApfloatMath.toDegrees(parameters.get(0)));
+                                Apfloat d2=helper.cosh(helper.toDegrees(parameters.get(0)));
                                 return d2; 
                         }
 		});
@@ -638,7 +664,7 @@ public class Expression {
 //				double d = Math.tanh(parameters.get(0).doubleValue());
 //				return new Apfloat(d, mc);
 			
-                                Apfloat d2=ApfloatMath.tanh(ApfloatMath.toDegrees(parameters.get(0)));
+                                Apfloat d2=helper.tanh(helper.toDegrees(parameters.get(0)));
                                 return d2; 
                         }
 		});
@@ -648,7 +674,7 @@ public class Expression {
 //				double d = Math.toRadians(parameters.get(0).doubleValue());
 //				return new Apfloat(d, mc);
 			
-                                Apfloat d2=ApfloatMath.toRadians(parameters.get(0));
+                                Apfloat d2=helper.toRadians(parameters.get(0));
                                 return d2; 
                         }
 		});
@@ -658,7 +684,7 @@ public class Expression {
 //				double d = Math.toDegrees(parameters.get(0).doubleValue());
 //				return new Apfloat(d, mc);
 			
-                                Apfloat d2=ApfloatMath.toDegrees(parameters.get(0));
+                                Apfloat d2=helper.toDegrees(parameters.get(0));
                                 return d2; 
                         }
 		});
@@ -697,7 +723,7 @@ public class Expression {
 			public Apfloat eval(List<Apfloat> parameters) {
 //				return parameters.get(0).abs(mc);
 
-                                return ApfloatMath.abs(parameters.get(0));
+                                return helper.abs(parameters.get(0));
                         }
 		});
 		addFunction(new Function("LOG", 1) {
@@ -706,7 +732,7 @@ public class Expression {
 //				double d = Math.log(parameters.get(0).doubleValue());
 //				return new Apfloat(d, mc);
 			
-                                 return ApfloatMath.log(parameters.get(0));
+                                 return helper.log(parameters.get(0));
                         }
 		});
 		addFunction(new Function("LOG10", 1) {
@@ -715,7 +741,7 @@ public class Expression {
 //				double d = Math.log10(parameters.get(0).doubleValue());
 //				return new Apfloat(d, mc);
                                 
-                                 return ApfloatMath.log(parameters.get(0), new Apfloat("10"));
+                                 return helper.log(parameters.get(0), new Apfloat("10"));
                         }
 		});
 		addFunction(new Function("ROUND", 2) {
@@ -725,7 +751,7 @@ public class Expression {
 				int precision = parameters.get(1).intValue();
 //				return toRound.setScale(precision, mc.getRoundingMode());
                                 
-                                return ApfloatMath.round(toRound, precision, mc.getRoundingMode());
+                                return helper.round(toRound,  rMode);
 			}
 		});
 		addFunction(new Function("FLOOR", 1) {
@@ -734,7 +760,7 @@ public class Expression {
 				Apfloat toRound = parameters.get(0);
 //				return toRound.setScale(0, RoundingMode.FLOOR);
 			
-                                return toRound.floor();
+                                return helper.floor(toRound);
                         }
 		});
 		addFunction(new Function("CEILING", 1) {
@@ -742,7 +768,7 @@ public class Expression {
 			public Apfloat eval(List<Apfloat> parameters) {
 				Apfloat toRound = parameters.get(0);
 //				return toRound.setScale(0, RoundingMode.CEILING);
-                                return toRound.ceil();
+                                return helper.ceil(toRound);
                         }
 		});
 		addFunction(new Function("SQRT", 1) {
@@ -776,7 +802,7 @@ public class Expression {
 //
 //				return new Apfloat(ix, mc.getPrecision());
 			
-                                return ApfloatMath.sqrt(x);
+                                return helper.sqrt(x);
                         }
 		});
 
@@ -976,7 +1002,7 @@ public class Expression {
 	 * @return The expression, allows to chain methods.
 	 */
 	public Expression setPrecision(int precision) {
-		this.mc = new MathContext(precision);
+//		this.mc = new MathContext(precision);
 		return this;
 	}
 
@@ -988,7 +1014,8 @@ public class Expression {
 	 * @return The expression, allows to chain methods.
 	 */
 	public Expression setRoundingMode(RoundingMode roundingMode) {
-		this.mc = new MathContext(mc.getPrecision(), roundingMode);
+//		this.mc = new MathContext(mc.getPrecision(), roundingMode);
+                this.rMode=roundingMode;
 		return this;
 	}
 

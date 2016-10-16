@@ -11,6 +11,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.apfloat.Apfloat;
 import org.apfloat.ApfloatMath;
+import org.apfloat.FixedPrecisionApfloatHelper;
 
 public class ProgressBarDemo21 extends JPanel implements ActionListener, PropertyChangeListener {
 
@@ -83,7 +84,8 @@ public class ProgressBarDemo21 extends JPanel implements ActionListener, Propert
                 int progress;
                 //Initialize progress property.
                 setProgress(0);
-                xVal = new Apfloat(txtStartValue.getText().trim(), 30);
+                xVal = new Apfloat(txtStartValue.getText().trim());
+                tol = new Apfloat(txtTol.getText().trim());
                 maxIter = Integer.parseInt(txtIter.getText().trim());
 
                 if ((substringPos = functionStr.indexOf("=")) != -1) {
@@ -95,21 +97,25 @@ public class ProgressBarDemo21 extends JPanel implements ActionListener, Propert
                 derive = d.diff(functionStr, "x")[0];
                 txtDerive.setText(derive);
                 
+                String strTol=tol.toString(true);
+                long precision=strTol.length()-1-strTol.indexOf('.');
+                FixedPrecisionApfloatHelper helper=new FixedPrecisionApfloatHelper(precision);
+                
                 Expression expression=null, deriveExpression=null;
                 try{
-                    expression = new Expression(functionStr);
-                    deriveExpression = new Expression(derive); //derive
+                    expression = new Expression(functionStr, precision);
+                    deriveExpression = new Expression(derive, precision); //derive
                 }catch(Exception e){
                     e.printStackTrace();
                 }
-                tol = new Apfloat(txtTol.getText().trim(), 30);
+                
                 funcVal = expression.with("x", xVal).eval();
                 Apfloat temp, deriveVal;
                 for (; k < maxIter && loop; k++) {
                     xPrev = xVal;
                     deriveVal=deriveExpression.with("x", xVal).eval();
-                    temp=funcVal.divide(deriveVal);
-                    xVal = xVal.subtract(temp);  //xVal - e.eval(s1, "x=" + xVal) / e.eval(derive, "x=" + xVal);
+                    temp=helper.divide(funcVal, deriveVal);
+                    xVal =helper.subtract(xVal, temp);  //xVal - e.eval(s1, "x=" + xVal) / e.eval(derive, "x=" + xVal);
                     funcVal = expression.with("x", xVal).eval();
                     //interacts with GUI
 //                  ========================================================
@@ -118,8 +124,8 @@ public class ProgressBarDemo21 extends JPanel implements ActionListener, Propert
 //                    publish(new IntermediateResult(k + 1, xVal, funcVal, (xPrev.subtract(xVal)).abs()));
                     display.append((k + 1) + ". x= " + xVal + ";  f(x)= " + funcVal +" f'(x) = " + deriveVal +   ";  abs(b-a)= " + ApfloatMath.abs(xPrev.subtract(xVal)).toString() + "\n"); //toEngineeringString toString
 //                  ========================================================
-
-                    if (ApfloatMath.abs(xPrev.subtract(xVal)).compareTo(tol) == -1) {
+                   
+                    if ( helper.abs(helper.subtract(xPrev,xVal)).compareTo(tol) == -1) {
                         break;
                     }
 
@@ -133,8 +139,8 @@ public class ProgressBarDemo21 extends JPanel implements ActionListener, Propert
                     display.append("Elapsed Time= " + estimatedTime + " ms.\n");
                 }
 
-            } catch (NumberFormatException _ex) {
-                display.append("Error: please make sure  that a start value, the number of iterations \nand tolerance were given and are numbers \n\n");
+//            } catch (NumberFormatException _ex) {
+//                display.append("Error: please make sure  that a start value, the number of iterations \nand tolerance were given and are numbers \n\n");
             } catch (Exception exception) {
                 display.append("Error: " + exception.getMessage() + "\n\n");
             }
